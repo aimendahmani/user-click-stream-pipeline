@@ -1,0 +1,29 @@
+version: "2.1"
+services:
+  kafka:
+    image: 'bitnami/kafka:3.5.1' # For Testing: kafka-console-producer.sh --broker-list localhost:9092 --topic test-topic, kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test-topic --from-beginning
+    ports: 
+      - '9092:9092'
+      - '9094:9094'
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+  # create kafka raw topic
+  kafka-init:
+    image: 'bitnami/kafka:3.5.1'
+    command: [ "/bin/bash", "-c", "/create_topic.sh"]
+    environment:
+      - TEST_TOPIC_NAME=input
+    depends_on:
+      kafka:
+        condition: service_started
+    volumes:
+      - type: bind
+        source: ./create_topic.sh
+        target: /create_topic.sh
+    init: true
